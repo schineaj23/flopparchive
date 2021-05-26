@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="">
+    <meta name="author" content="catberg">
+    <meta name="generator" content="Hugo 0.83.1">
+    <title>Flopparchive</title>
+
+    <link rel="canonical" href="https://flopparchive.tk">
+
+    
+
+    <!-- Bootstrap core CSS -->
+    <link rel="stylesheet" href="css/bootstrap.min.css"/>
+    <style>
+      .bd-placeholder-img {
+        font-size: 1.125rem;
+        text-anchor: middle;
+        -webkit-user-select: none;
+        -moz-user-select: none;
+        user-select: none;
+      }
+
+      @media (min-width: 768px) {
+        .bd-placeholder-img-lg {
+          font-size: 3.5rem;
+        }
+      }
+    </style>
+
+    
+  </head>
+  <body>
+    
+<header>
+  <div class="collapse bg-dark" id="navbarHeader">
+    <div class="container">
+      <div class="row">
+        <div class="col-sm-8 col-md-7 py-4">
+          <h4 class="text-white">About</h4>
+          <p class="text-muted">A repository of funny cats, automatically updated via a Discord bot! The bot scrapes a discord channel, uploading an image to the database, and mirroring to other servers it is in.</p>
+        </div>
+        <div class="col-sm-4 offset-md-1 py-4">
+          <h4 class="text-white">Contact</h4>
+          <ul class="list-unstyled">
+            <li><a href="https://twitter.com/realcatberg" class="text-white">Follow on Twitter</a></li>
+            <li><a href="https://steamcommunity.com/id/therealcatberg" class="text-white">Steam Profile</a></li>
+            <li><a href="https://t.me/catberg" class="text-white">Message me</a></li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="navbar navbar-dark bg-dark shadow-sm">
+    <div class="container">
+      <a href="#" class="navbar-brand d-flex align-items-center">
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" aria-hidden="true" class="me-2" viewBox="0 0 24 24"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+        <strong>Flopparchive</strong>
+      </a>
+      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarHeader" aria-controls="navbarHeader" aria-expanded="false" aria-label="Toggle navigation">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+    </div>
+  </div>
+</header>
+
+<main>
+
+  <section class="py-5 text-center container">
+    <div class="row py-lg-5">
+      <div class="col-lg-6 col-md-8 mx-auto">
+        <h1 class="fw-light">Flopparchive</h1>
+        <p class="lead text-muted">A repository of funny cats, and discord bot.</p>
+        <p>
+          <a href="https://discord.com/api/oauth2/authorize?client_id=844247029937209357&permissions=117760&scope=bot" class="btn btn-primary my-2">Invite to server</a>
+          <a href="#" class="btn btn-secondary my-2">Comfy viewing</a>
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <div class="album py-5 bg-light">
+    <div class="container">
+      <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 g-3">
+        
+        <% flops.forEach(function(floppa) { %>
+          <div class="col">
+            <div class="card shadow-sm">
+              <img src="<%= floppa.image %>" class="img-fluid card-img-top">
+              <div class="card-body">
+                <p class="card-text"><%= floppa.desc %></p>
+                <div class="d-flex justify-content-between align-items-center">
+                  <small class="text-muted"><%= new Date(floppa.date).toLocaleString() %></small>
+                </div>
+              </div>
+            </div>
+          </div>
+        <% }); %>
+        
+      </div>
+    </div>
+  </div>
+
+</main>
+
+<footer class="text-muted py-5">
+  <div class="container">
+    <p class="float-end mb-1">
+      <a href="#">Back to top</a>
+    </p>
+    <p class="mb-1">Based on Bootstrap example, modified by catberg for archive</p>
+    <p class="mb-0">Enjoy the funny cats? <a href="https://twitter.com/realcatberg">Visit my twitter</a>!</p>
+  </div>
+</footer>
+
+
+  <script language="javascript" src="js/bootstrap.min.js"></script>
+      
+  </body>
+</html>
