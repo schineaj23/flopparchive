@@ -1,6 +1,7 @@
 require('dotenv').config();
 const Discord = require('discord.js');
 const db = require('./floppabase.js');
+const channelDb = require('./jsondb');
 const https = require('https');
 
 const bot = new Discord.Client();
@@ -8,6 +9,7 @@ const TOKEN = process.env.TOKEN;
 const CHANNEL = process.env.CHANNEL;
 const OWNER = process.env.OWNER_ACCOUNT;
 const TENOR_KEY = process.env.TENOR_API_KEY;
+const EMBED_COLOR = 16741893;  // #ff7605
 
 function matchDomain(str, domain) {
     const match = RegExp(`^(https?:\\/\\/(.+?\\.)?${domain}(\\/[A-Za-z0-9\\-\\._~:\\/\\?#\\[\\]@!$&'\\(\\)\\*\\+,;\\=]*)?)`, 'g');
@@ -17,6 +19,7 @@ function matchDomain(str, domain) {
 
 function gifTenor(url) {
     // the id will always be the last tag in the URL
+    const original = url;
     const result = url[0].split("-");
     const ids = result[result.length - 1];
     console.info(`Tenor id: ${ids}`);
@@ -25,7 +28,7 @@ function gifTenor(url) {
         res.on('data', (data) => {
             try {
                 var parsed = JSON.parse(data.toString());
-                console.log(parsed);
+                console.info(parsed);
             } catch (e) {
                 console.info(e);
             } finally {
@@ -34,19 +37,14 @@ function gifTenor(url) {
                 const obj = { image: parsed.results[0].media[0].gif.url, desc: '', date: new Date().toJSON() };
 
                 db.pushFloppa(obj);
+                distributeFloppa(obj, 'gifv');
             }
         });
     }).on('error', (e) => console.info(e));
 }
 
-bot.on('ready', () => {
-    console.info(`Logged in as ${bot.user.tag}!`);
-    console.info(bot.channels);
-});
-
-bot.on('message', msg => {
-    console.info(msg);
-    if (msg.author.id != OWNER || msg.channel.id != CHANNEL) {
+function updateArchive(msg) {
+    if (msg.author.id != OWNER) {
         console.info('message is not owner message');
     }
 
@@ -63,6 +61,7 @@ bot.on('message', msg => {
             const obj = { image: image, desc: desc, date: new Date().toJSON() };
 
             db.pushFloppa(obj);
+            distributeFloppa(obj);
         });
     } else if (msg.embeds.length > 0) {
         msg.embeds.forEach(function (val) {
@@ -71,6 +70,7 @@ bot.on('message', msg => {
                 const obj = { image: val.url, desc: '', date: new Date().toJSON() };
 
                 db.pushFloppa(obj);
+                distributeFloppa(obj);
             } else if (val.type == 'gifv') {
                 // assuming that this is a tenor link, since it is the most common gif provider on discord
                 const match = matchDomain(val.url, domains[3]);
@@ -97,8 +97,124 @@ bot.on('message', msg => {
         if (image != null) {
             const obj = { image: image, desc: '', date: new Date().toJSON() };
 
-            db.pullFloppa(obj);
+            db.pushFloppa(obj);
+            distributeFloppa(obj);
         }
+    }
+}
+
+function distributeFloppa(obj, type='image') {
+    const channels = channelDb.pullArray('channels.json');
+    if(channels == null || channels.entries == null) {
+        console.info("Not sending messages, channels were null");
+        return;
+    }
+    var embed = new Discord.MessageEmbed();
+    embed.color = EMBED_COLOR;
+
+    embed.type = type;
+    embed.setImage(obj.image);
+    embed.setTitle("Floppa Recieved");
+    embed.setDescription(obj.desc);
+    channels.entries.forEach((entry) => {
+        if(entry.owner == false) {
+            bot.channels.cache.get(entry.id).send(embed);
+        }
+    });
+}
+
+bot.on('ready', () => {
+    console.info(`Logged in as ${bot.user.tag}!`);
+    
+    // prune the floppabase on startup
+    var array = db.pullFloppa();
+    if(array != null || array.entries != null) {
+        let pruned = [];
+        array.entries.forEach((element) => {
+            if(pruned.findIndex((e) => e.image == element.image) < 0) {
+                pruned.push(element);
+            }
+        });
+        channelDb.pushArray('flop.json', {entries: pruned});
+        console.info('removed duplicates from array');
+    }
+});
+
+bot.on('message', msg => {
+    //console.info(msg);
+
+    if (msg.author.tag == bot.user.tag) {
+        return;
+    }
+
+    const message = msg.content;
+    const discriminator = message.split("*");
+    if (message[0] == "*") { // our prefix
+        console.info("Command prefix triggered");
+        console.info(discriminator.toString());
+        switch (discriminator[1]) {
+            case "help":
+                msg.reply(new Discord.MessageEmbed({
+                    title: "Commands",
+                    type: "rich",
+                    fields: [
+                        { name: "`*help`", value: "Prints available commands", inline: false },
+                        { name: "`*setlistener`", value: "Sets current channel to recieve Flopparchive updates", inline: false },
+                        { name: "`*removelistener`", value: "Removes channel from recieving Flopparchive updates", inline: false }
+                    ],
+                    color: EMBED_COLOR
+                }));
+                break;
+            case "setlistener":
+                const set = {
+                    id: msg.channel.id,
+                    owner: false
+                };
+                if (!channelDb.elementExists('channels.json', set)) {
+                    channelDb.pushElement('channels.json', set)
+                    msg.reply(new Discord.MessageEmbed({
+                        title: "Channel is now recieving flopparchive updates.",
+                        type: "rich",
+                        color: EMBED_COLOR
+                    }));
+                } else {
+                    msg.reply(new Discord.MessageEmbed({
+                        title: "Channel is already recieving flopparchive updates.",
+                        type: "rich",
+                        color: EMBED_COLOR
+                    }));
+                }
+                break;
+            case "removelistener":
+                const rem = {
+                    id: msg.channel.id,
+                    owner: false
+                };
+                var channels = channelDb.pullArray('channels.json').entries;
+                if (!channelDb.elementExists('channels.json', rem) || channels == null) {
+                    msg.reply(new Discord.MessageEmbed({
+                        title: "Not found. Channel was never recieving flopparchive updates.",
+                        type: "rich",
+                        color: EMBED_COLOR
+                    }));
+                    break;
+                }
+                var newChannels = channels.filter((element) => element.id != rem.id);
+                console.info(newChannels);
+                channelDb.pushArray('channels.json', { entries: newChannels });
+                msg.reply(new Discord.MessageEmbed({
+                    title: "Channel is no longer recieving flopparchive updates.",
+                    type: "rich",
+                    color: EMBED_COLOR
+                }));
+                break;
+            default: 
+                break;
+        }
+    } else {
+        console.info("updating archive");
+        // if the message is not a command, it is an update
+        updateArchive(msg);
     }
 });
 
